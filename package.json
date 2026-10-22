@@ -1,0 +1,14 @@
+{
+  "name": "php2shell",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PHP2Shell advisory portal with non-invasive live HTTP header assessment.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test server.test.mjs scanner.test.mjs"
+  }
+}
