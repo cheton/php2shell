@@ -30,10 +30,17 @@ HOST=127.0.0.1 npm start
 | `PORT` | `3000` | Listen port |
 | `HOST` | `0.0.0.0` | Listen address |
 | `PUBLIC_DIR` | `./public` | Static asset directory |
+| `SCAN_IGNORE_TLS_ERRORS` | `false` | Set exactly `true` to disable certificate verification for scan targets only |
 
 The API is not authenticated. Keep this portal on a trusted network. The consent
 checkbox records a caller assertion, not proof of target ownership. Internet
 publication requires access control and deployment-level request rate limits.
+
+For authorized test sites with invalid certificates, run
+`SCAN_IGNORE_TLS_ERRORS=true npm start`. Each affected scan result warns that TLS
+identity was not verified and evidence may be spoofed. This setting does not
+disable DNS validation, DNSSEC at the resolver, or SSRF address restrictions.
+Keep the default for normal use. HTTP clients cannot select this override.
 
 ## Detection
 
@@ -101,7 +108,8 @@ not a clean or patched verdict.
 - Revalidate redirect destinations and reject credentials and non-standard ports.
 - Enforce a 10-second overall deadline, bounded headers and three redirects.
 - Limit each server instance to four concurrent scans; excess requests are rejected.
-- Keep TLS certificate verification enabled and cap HTML reads at 64 KiB.
+- Verify TLS certificates by default; explicitly configured test scans may skip
+  verification with a result warning. Cap HTML reads at 64 KiB.
 
 These controls reduce SSRF exposure; they do not replace outbound firewall policy,
 API authentication, or review before deployment. Private/internal websites are
@@ -124,6 +132,8 @@ Tests use Node's built-in runner and isolated fixtures. They cover classificatio
 boundaries, ambiguous signals, unsafe destinations and API/static behavior without
 depending on a public website's current banner. Controlled fixtures advertise PHP
 headers; they prove checker behavior, not the presence of an actual PHP exploit.
+The self-signed HTTPS regression generates temporary test certificates with the
+`openssl` executable; it checks default rejection, explicit override and SSRF rejection.
 
 The user-supplied CSV is a regression reference, not an imported asset inventory.
 Representative fixtures cover matching `PHP/8.2.29` in two headers, the mixed

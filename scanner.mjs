@@ -481,6 +481,7 @@ export async function requestHeaders({
   family,
   signal,
   captureBody = false,
+  ignoreTlsErrors = false,
   maxHeaderSize = MAX_HEADER_SIZE,
   maxBodyBytes = MAX_BODY_BYTES,
 } = {}) {
@@ -508,7 +509,7 @@ export async function requestHeaders({
       else callback(null, address, family);
     },
     servername: target.protocol === 'https:' && isIP(bare) === 0 ? bare : undefined,
-    rejectUnauthorized: true,
+    rejectUnauthorized: ignoreTlsErrors !== true,
     maxHeaderSize,
     agent: false,
   };
@@ -798,8 +799,8 @@ function combine(hops, {
  *
  * `options.resolve` and `options.request` are in-process test seams only. They
  * are never read from HTTP input, environment variables, or client config.
- * Production callers must use `scanWebsite(url)` so real DNS validation and
- * pinned transport remain in force.
+ * Production callers may set `ignoreTlsErrors` for authorized test scans, but
+ * must not override DNS resolution or pinned transport.
  */
 export async function scanWebsite(inputUrl, options = {}) {
   if (!(inputUrl instanceof URL)) throw new ScanError('A valid URL object is required.', 400);
@@ -811,6 +812,7 @@ export async function scanWebsite(inputUrl, options = {}) {
   const request = typeof opts.request === 'function' ? opts.request : requestHeaders;
   const deadlineMs = Number.isFinite(opts.deadlineMs) && opts.deadlineMs > 0 ? opts.deadlineMs : DEADLINE_MS;
   const maxRedirects = Number.isInteger(opts.maxRedirects) && opts.maxRedirects >= 0 ? opts.maxRedirects : MAX_REDIRECTS;
+  const ignoreTlsErrors = opts.ignoreTlsErrors === true;
   const timeoutMessage = deadlineMs === DEADLINE_MS ? 'The scan timed out after 10 seconds.' : 'The scan timed out.';
 
   const controller = new AbortController();
@@ -820,6 +822,7 @@ export async function scanWebsite(inputUrl, options = {}) {
     controller.abort(new ScanError(timeoutMessage, 502));
   }, deadlineMs);
   let currentHostname = originalHostname;
+  let skippedTlsVerification = false;
 
   try {
     assertTarget(original, 400);
@@ -843,12 +846,14 @@ export async function scanWebsite(inputUrl, options = {}) {
         signal: controller.signal,
         statusCode: redirects === 0 ? 400 : 502,
       });
+      if (ignoreTlsErrors && target.protocol === 'https:') skippedTlsVerification = true;
       const response = await abortable(request({
         target,
         address: pinned.address,
         family: pinned.family,
         signal: controller.signal,
         captureBody: true,
+        ignoreTlsErrors,
         maxHeaderSize: MAX_HEADER_SIZE,
         maxBodyBytes: MAX_BODY_BYTES,
       }), controller.signal);
@@ -897,6 +902,9 @@ export async function scanWebsite(inputUrl, options = {}) {
         sawDowngrade,
         bodyInfo,
       });
+      if (skippedTlsVerification) {
+        combined.warnings.unshift('TLS certificate verification was disabled for this scan. Website identity was not verified; response evidence may be spoofed.');
+      }
 
       return {
         mock: false,

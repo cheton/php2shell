@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import https from 'node:https';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import {
   scanWebsite,
   ScanError,
@@ -501,6 +506,37 @@ test('scanWebsite real transport smoke via loopback fixture and vetted public DN
   assert.equal(result.status, 'unknown');
   assert.equal(result.httpStatus, 200);
   assert.ok(result.evidence.some((item) => /\.php URLs \(1 found\)/.test(item)));
+});
+
+test('self-signed HTTPS requires explicit override and warns without weakening address policy', async (t) => {
+  const directory = await mkdtemp(path.join(tmpdir(), 'php2shell-tls-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const keyPath = path.join(directory, 'key.pem');
+  const certPath = path.join(directory, 'cert.pem');
+  execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes',
+    '-keyout', keyPath, '-out', certPath, '-days', '1', '-subj', '/CN=localhost'], { stdio: 'ignore' });
+  let hits = 0;
+  const server = https.createServer({ key: await readFile(keyPath), cert: await readFile(certPath) }, (req, res) => {
+    hits += 1;
+    res.writeHead(200, { 'X-Powered-By': 'PHP/8.2.29' });
+    res.end();
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  const options = {
+    resolve: publicResolve,
+    request: (request) => requestHeaders({ ...request,
+      target: new URL(`https://localhost:${server.address().port}/`),
+      address: '127.0.0.1', family: 4 }),
+  };
+  await assert.rejects(scanWebsite(new URL('https://example.test/'), options), /TLS certificate verification failed/);
+  assert.equal(hits, 0);
+  const result = await scanWebsite(new URL('https://example.test/'), { ...options, ignoreTlsErrors: true });
+  assert.equal(hits, 1);
+  assert.equal(result.php_version, '8.2.29');
+  assert.equal(result.status, 'affected');
+  assert.match(result.warnings[0], /TLS certificate verification was disabled/);
+  await assert.rejects(scanWebsite(new URL('https://127.0.0.1/'), { ignoreTlsErrors: true }), /not a public address/);
 });
 
 
