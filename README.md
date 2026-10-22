@@ -30,17 +30,17 @@ HOST=127.0.0.1 npm start
 | `PORT` | `3000` | Listen port |
 | `HOST` | `0.0.0.0` | Listen address |
 | `PUBLIC_DIR` | `./public` | Static asset directory |
-| `SCAN_IGNORE_TLS_ERRORS` | `false` | Set exactly `true` to disable certificate verification for scan targets only |
+| `SCAN_IGNORE_TLS_ERRORS` | `true` | Set `false` to restore certificate verification for scan targets |
 
 The API is not authenticated. Keep this portal on a trusted network. The consent
 checkbox records a caller assertion, not proof of target ownership. Internet
 publication requires access control and deployment-level request rate limits.
 
-For authorized test sites with invalid certificates, run
-`SCAN_IGNORE_TLS_ERRORS=true npm start`. Each affected scan result warns that TLS
-identity was not verified and evidence may be spoofed. This setting does not
-disable DNS validation, DNSSEC at the resolver, or SSRF address restrictions.
-Keep the default for normal use. HTTP clients cannot select this override.
+Scans skip TLS certificate verification by default. Each HTTPS scan result warns
+that TLS identity was not verified and evidence may be spoofed. To restore
+certificate verification, run `SCAN_IGNORE_TLS_ERRORS=false npm start`.
+This setting does not disable DNS validation, DNSSEC at the resolver, or SSRF
+address restrictions. HTTP clients cannot select this override.
 
 ## Detection
 
@@ -108,8 +108,8 @@ not a clean or patched verdict.
 - Revalidate redirect destinations and reject credentials and non-standard ports.
 - Enforce a 10-second overall deadline, bounded headers and three redirects.
 - Limit each server instance to four concurrent scans; excess requests are rejected.
-- Verify TLS certificates by default; explicitly configured test scans may skip
-  verification with a result warning. Cap HTML reads at 64 KiB.
+- Skip TLS certificate verification by default with a result warning; operators
+  can restore verification. Cap HTML reads at 64 KiB.
 
 These controls reduce SSRF exposure; they do not replace outbound firewall policy,
 API authentication, or review before deployment. Private/internal websites are

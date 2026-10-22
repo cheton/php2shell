@@ -405,7 +405,7 @@ const isEntrypoint = process.argv[1] !== undefined
 if (isEntrypoint) {
   const port = Number.parseInt(process.env.PORT ?? '3000', 10);
   const host = process.env.HOST ?? '0.0.0.0';
-  const ignoreTlsErrors = process.env.SCAN_IGNORE_TLS_ERRORS === 'true';
+  const ignoreTlsErrors = (process.env.SCAN_IGNORE_TLS_ERRORS ?? 'true') === 'true';
   const server = createServer({ scan: (target) => scanWebsite(target, { ignoreTlsErrors }) });
   if (ignoreTlsErrors) {
     console.warn('[php2shell] WARNING: scan TLS certificate verification is disabled; website identity is not verified.');
