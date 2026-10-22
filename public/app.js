@@ -80,6 +80,8 @@ form.addEventListener('submit', async (event) => {
   error.hidden = true;
   form.setAttribute('aria-busy', 'true');
   $('#scan-button').disabled = true;
+  $('#web-mode').disabled = true;
+  $('#local-mode').disabled = true;
   intro.hidden = true;
   layout.hidden = true;
   progress.hidden = false;
@@ -107,6 +109,8 @@ form.addEventListener('submit', async (event) => {
   } finally {
     form.removeAttribute('aria-busy');
     $('#scan-button').disabled = false;
+    $('#web-mode').disabled = false;
+    $('#local-mode').disabled = false;
   }
 });
 

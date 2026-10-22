@@ -9,6 +9,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230866ff'/%3E%3Cpath d='m13 9-7 7 7 7m6-14 7 7-7 7' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/styles.css">
   <script type="module" src="/app.js"></script>
+  <script type="module" src="/local.js"></script>
 </head>
 <body>
   <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
@@ -32,6 +33,20 @@
       <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-line line-one"></div><div class="art-line line-two"></div><div class="code-tag tag-one">&lt;?php</div><div class="shield-tile"><svg><use href="#shield"/></svg></div><div class="code-tag tag-two">security starts here_</div><span class="art-dot dot-one"></span><span class="art-dot dot-two"></span><span class="art-plus">+</span></div>
     </section>
     <section id="checker" class="checker-section wrap" aria-labelledby="checker-title">
+      <nav class="scan-modes" aria-label="Scan method"><button id="web-mode" type="button" aria-pressed="true"><strong>Web scan</strong><span>Check a public website</span></button><button id="local-mode" type="button" aria-pressed="false"><strong>Local scan</strong><span>Run your agent inside your environment</span></button></nav>
+      <section id="local-panel" class="local-panel" aria-labelledby="local-title" hidden>
+        <div class="local-heading"><h2 id="local-title">Check from inside your environment</h2><p>The local agent checks its host. This portal receives and displays the results; it does not run commands on your host.</p></div>
+        <ol class="local-steps"><li>Enter your email</li><li>Save your scan key</li><li>Download and run the agent</li><li>Review your report</li></ol>
+        <form id="local-enroll" class="local-form"><label class="field-label" for="local-email">Email address</label><input id="local-email" type="email" autocomplete="email" required maxlength="254" placeholder="you@company.com"><p>Your email is stored with this scan record. No email is sent. This is not an email-verified account.</p><label class="authorization"><input id="local-consent" type="checkbox" required><span>I am authorized to check this host and send its scan findings to this portal.</span></label><button class="button primary" id="local-create" type="submit">Create local scan</button></form>
+        <form id="local-restore" class="local-restore"><label for="local-key-input">Already have a scan key?</label><div><input id="local-key-input" type="text" required autocomplete="off" spellcheck="false" placeholder="Paste your scan key"><button class="button" type="submit">Open report</button></div></form>
+        <p id="local-error" class="local-error" role="alert" hidden></p>
+        <section id="local-workspace" hidden aria-label="Local scan report">
+          <div class="local-key"><h3>Your scan key (kid)</h3><code id="local-kid"></code><button class="text-link" id="local-copy" type="button">Copy key</button><p id="local-storage-note">Saved in this browser. Keep a copy to open your report on another device. Anyone with this key can read your results.</p></div>
+          <section class="local-agent"><h3>Download and run the agent</h3><a id="local-download" class="button primary" hidden>Download agent</a><p id="local-agent-unavailable">Agent download is not configured. This portal can receive results, but no agent binary is available here yet.</p><div id="local-command-block" hidden><p>Run the supplied agent as instructed by your agent provider. Pass this short-lived upload token using the provider’s supported method; keep it out of shared logs.</p><label for="local-token">Agent upload token</label><textarea id="local-token" readonly rows="3" spellcheck="false"></textarea><p id="local-token-expiry"></p></div><p id="local-token-missing" hidden>The upload token is only shown when you create a scan. It is not stored in this browser. Use your original token, or create a new scan if it has expired.</p></section>
+          <div class="local-report-heading"><div><h3>Agent results</h3><p id="local-state" role="status">Waiting for the agent to return results.</p></div><button id="local-refresh" class="text-link" type="button">Refresh results</button></div>
+          <p>Agent-reported findings are not independently verified by this portal. A patched version is not proof that the host is secure.</p><div id="local-runs"></div><button id="local-new" class="text-link local-new" type="button">Create or open another local scan</button>
+        </section>
+      </section>
       <div id="scan-intro" class="scan-intro"><div class="eyebrow">PHP2Shell checker</div><h2 id="checker-title">Is your site exposed?</h2><p class="section-description">Start with your URL. Check for signs of PHP2Shell.</p></div>
       <div id="checker-layout" class="checker-layout">
         <ol class="steps"><li><span class="step-number">1</span><div><h3>Enter your URL</h3><p>Start the check in seconds.</p></div></li><li><span class="step-number">2</span><div><h3>Review the signals</h3><p>We’ll look for signs of PHP2Shell exposure.</p></div></li><li><span class="step-number">3</span><div><h3>Find your next step</h3><p>Get guidance from Imperva security experts.</p></div></li></ol>

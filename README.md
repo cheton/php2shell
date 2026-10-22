@@ -116,6 +116,49 @@ API authentication, or review before deployment. Private/internal websites are
 intentionally unsupported. There is no client or environment switch to bypass
 address protections.
 
+## Web scan and Local scan
+
+The checker has two visible entrances. Web scan keeps the existing public URL
+assessment. Local scan integrates a separately supplied host agent; this project
+does not implement the agent's internal inspection or manufacture findings.
+
+Local scan is frontend-only in this repository. Its enrollment and report APIs
+will be supplied by a separate backend. Until those endpoints are connected,
+the UI reports that the service is not connected; it does not generate a fake
+kid, token, download, or result. Serve the frontend and backend under the same
+origin, or configure a deployment reverse proxy for the `/api/v3.0/` routes.
+
+The frontend sends an email and authorization assertion, then expects the backend
+to return a `kid` and separate expiring upload token. It saves only `kid` in
+`localStorage`; the token is displayed once and is not persisted there. The
+backend must define email handling, authentication, retention and report storage.
+If kid alone grants report access, treat it as a secret. The UI provides copy,
+manual recovery, and refresh controls. It does not send email or verify ownership.
+
+The backend supplies `agent_download_url` as HTTPS or null. Without it, the UI
+explicitly says no agent download is configured. The agent provider defines the
+executable and how it accepts the token; no unverified command is presented.
+Use HTTPS in deployment. Web scan's target TLS override does not apply to agent
+uploads or the portal's backend connection.
+
+### Proposed backend response contract (not implemented here)
+
+- `POST /api/v3.0/scans`: `{ "email": "you@example.com", "authorized": true }`.
+  Returns `kid`, `jwt_token`, `token_expires_at`, and `agent_download_url`.
+- `POST /api/v3.0/scans/kid/results`: `{ "kid": "YOUR_SCAN_KEY" }`.
+  Returns `status` (`waiting` or `completed`), `runs`, and the download URL.
+  Each run contains `run_id`, `received_at`, optional `hostname`, and `findings`.
+  Each finding has `component` (string), `version` (string or null), `status`
+  (`affected`, `patched`, or `unknown`), and `evidence` (array of strings).
+  The agent upload route in the supplied diagram belongs to the separate backend;
+  this frontend neither implements nor calls it.
+
+Agent findings are untrusted, agent-reported evidence, not independently verified
+exploitation or patch confirmation. Do not submit credentials, cookie values,
+environment dumps, source files, or other secrets in findings. An empty findings
+list does not establish that PHP is absent or the host is safe. Enrollment needs
+deployment-level rate limiting and privacy/retention policies before public use.
+
 ## Code and tests
 
 - `scanner.mjs`: address policy, real network requests, PHP evidence classification.
